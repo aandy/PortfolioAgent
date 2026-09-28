@@ -2,7 +2,7 @@ import io
 import os
 import pandas as pd
 import streamlit as st
-from google import genai  # Google GenAI SDK
+from openai import OpenAI
 
 # Page Configuration
 st.set_page_config(
@@ -19,18 +19,15 @@ st.markdown(
 )
 
 # API Key Input
-api_key = st.secrets.get("GEMINI_API_KEY", "")
+api_key = st.secrets.get("GROQ_API_KEY", "")
 
 if not api_key:
   with st.sidebar:
     st.subheader("Configuration")
-    api_key = st.text_input(
-        "Enter Google Gemini API Key",
-        type="password",
-        help="Get a free key from Google AI Studio",
-    )
+    api_key = st.text_input("Enter Groq API Key", type="password")
     st.markdown(
-        "[Get a free Gemini API Key](https://aistudio.google.com/app/apikey)"
+        "Get a free API key instantly at"
+        " [console.groq.com/keys](https://console.groq.com/keys)"
     )
 
 # Input Methods
@@ -49,7 +46,7 @@ with input_tab1:
         df = pd.read_csv(uploaded_file)
       else:
         df = pd.read_excel(uploaded_file)
-      st.dataframe(df)  # Shows full table
+      st.dataframe(df)
       portfolio_data = df.to_string(index=False)
     except Exception as e:
       st.error(f"Error reading file: {e}")
@@ -70,16 +67,18 @@ with input_tab2:
 # Analysis Trigger
 if st.button("Evaluate Portfolio", type="primary"):
   if not api_key:
-    st.warning("Please provide a Gemini API key in the sidebar to continue.")
+    st.warning("Please provide a Groq API key in the sidebar to continue.")
   elif not portfolio_data:
     st.warning("Please upload a file or paste your portfolio data first.")
   else:
     with st.spinner("Analyzing portfolio allocation and risk profile..."):
       try:
-        # Initialize Google GenAI Client
-        client = genai.Client(api_key=api_key)
+        # Initialize client pointing to Groq's lightning-fast endpoint
+        client = OpenAI(
+            api_key=api_key, base_url="https://api.groq.com/openai/v1"
+        )
 
-        system_instruction = (
+        system_prompt = (
             "You are a professional, objective, and conservative financial"
             " equity expert. Review the provided portfolio summary. Provide"
             " structured, non-binding educational feedback covering: 1) Asset"
@@ -90,17 +89,26 @@ if st.button("Evaluate Portfolio", type="primary"):
             " Never request personal identifiable information (PII)."
         )
 
-        response = client.models.generate_content(
-            model="gemini-3.5-flash-lite",  # Fast and free-tier friendly model
-            contents=(
-                f"{system_instruction}\n\nHere is the portfolio summary"
-                f" data:\n{portfolio_data}"
-            ),
+        response = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {
+                    "role": "user",
+                    "content": (
+                        "Here is the portfolio summary data:\n\n"
+                        f"{portfolio_data}"
+                    ),
+                },
+            ],
+            temperature=0.3,
         )
+
+        analysis_result = response.choices[0].message.content
 
         st.markdown("---")
         st.subheader("📊 Expert Portfolio Review")
-        st.markdown(response.text)
+        st.markdown(analysis_result)
 
       except Exception as e:
         st.error(f"An error occurred during generation: {e}")
