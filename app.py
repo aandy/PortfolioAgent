@@ -1,8 +1,8 @@
 import io
 import os
-import pandas as pd  # standard alias
+import pandas as pd
 import streamlit as st
-from openai import OpenAI  # or replace with groq / deepseek client if preferred
+from google import genai  # Google GenAI SDK
 
 # Page Configuration
 st.set_page_config(
@@ -18,17 +18,19 @@ st.markdown(
 """
 )
 
-# Initialize LLM Client (using environment secret or input)
-# For completely free execution, you can use Groq or OpenRouter free tiers, or standard OpenAI keys.
-api_key = st.secrets.get("OPENAI_API_KEY", "")
+# API Key Input
+api_key = st.secrets.get("GEMINI_API_KEY", "")
 
 if not api_key:
   with st.sidebar:
     st.subheader("Configuration")
-    api_key = st.text_input("Enter LLM API Key (OpenAI/Groq)", type="password")
+    api_key = st.text_input(
+        "Enter Google Gemini API Key",
+        type="password",
+        help="Get a free key from Google AI Studio",
+    )
     st.markdown(
-        "[Get a free/low-cost API key]"
-        "(https://console.groq.com/keys) (Groq offers free tiers)"
+        "[Get a free Gemini API Key](https://aistudio.google.com/app/apikey)"
     )
 
 # Input Methods
@@ -47,7 +49,7 @@ with input_tab1:
         df = pd.read_csv(uploaded_file)
       else:
         df = pd.read_excel(uploaded_file)
-      st.dataframe(df.head())
+      st.dataframe(df)  # Shows full table
       portfolio_data = df.to_string(index=False)
     except Exception as e:
       st.error(f"Error reading file: {e}")
@@ -68,18 +70,16 @@ with input_tab2:
 # Analysis Trigger
 if st.button("Evaluate Portfolio", type="primary"):
   if not api_key:
-    st.warning("Please provide an API key to run the analysis.")
+    st.warning("Please provide a Gemini API key in the sidebar to continue.")
   elif not portfolio_data:
     st.warning("Please upload a file or paste your portfolio data first.")
   else:
     with st.spinner("Analyzing portfolio allocation and risk profile..."):
       try:
-        client = OpenAI(
-            api_key=api_key,
-            # If using Groq, change base_url to "https://api.groq.com/openai/v1" and model to "llama-3.3-70b-versatile"
-        )
+        # Initialize Google GenAI Client
+        client = genai.Client(api_key=api_key)
 
-        system_prompt = (
+        system_instruction = (
             "You are a professional, objective, and conservative financial"
             " equity expert. Review the provided portfolio summary. Provide"
             " structured, non-binding educational feedback covering: 1) Asset"
@@ -90,26 +90,17 @@ if st.button("Evaluate Portfolio", type="primary"):
             " Never request personal identifiable information (PII)."
         )
 
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",  # or lightweight model like llama-3.3-70b-versatile via Groq
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {
-                    "role": "user",
-                    "content": (
-                        "Here is the portfolio summary data:\n\n"
-                        f"{portfolio_data}"
-                    ),
-                },
-            ],
-            temperature=0.3,
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",  # Fast and free-tier friendly model
+            contents=(
+                f"{system_instruction}\n\nHere is the portfolio summary"
+                f" data:\n{portfolio_data}"
+            ),
         )
-
-        analysis_result = response.choices[0].message.content
 
         st.markdown("---")
         st.subheader("📊 Expert Portfolio Review")
-        st.markdown(analysis_result)
+        st.markdown(response.text)
 
       except Exception as e:
         st.error(f"An error occurred during generation: {e}")
