@@ -97,9 +97,10 @@ Portfolio Data:
             model="openai/gpt-oss-20b",
             messages=[{"role": "user", "content": prompt_content}],
             temperature=0.3,
+            max_tokens=4096,  # Doubled token limit to accommodate reasoning + output
         )
 
-        # Bulletproof extraction safe for any response schema
+        # Extraction logic
         analysis_result = ""
         if response and hasattr(response, "choices") and response.choices:
           message = response.choices[0].message
@@ -111,12 +112,9 @@ Portfolio Data:
           st.subheader("📊 Expert Portfolio Review")
           st.markdown(analysis_result)
         else:
-          st.write(
-              "Raw Response Debug:", response
-          )  # Fallback view if empty
           st.error(
-              "Could not extract text. Please check your input format and try"
-              " again."
+              "Model completed reasoning but returned empty content. Please"
+              " try re-running."
           )
 
       except Exception as e:
