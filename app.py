@@ -15,6 +15,7 @@ st.markdown(
     """
 * **100% Non-Invasive:** No login, no signup, no database tracking. 
 * **Zero Persistence:** Your portfolio summary/data is processed in-memory and discarded the moment you refresh or close the page.
+* **Global Market Support:** Fully parses Indian (NSE/BSE), US, and international equities or mutual funds.
 """
 )
 
@@ -53,12 +54,12 @@ with input_tab1:
 
 with input_tab2:
   pasted_text = st.text_area(
-      "Or paste your holdings summary here (e.g., Asset Name, Allocation %,"
-      " Value)",
+      "Or paste your holdings summary here (e.g., Asset Name, Quantity, Avg"
+      " Price)",
       height=150,
       placeholder=(
-          "Example:\n- Apple Inc (AAPL): 30%\n- Vanguard S&P 500 ETF (VOO):"
-          " 50%\n- Cash: 20%"
+          "Example:\n- Reliance Industries: 15 shares, Avg: ₹2,400\n- TCS: 10"
+          " shares, Avg: ₹3,500\n- Nifty Bees ETF: 50 units"
       ),
   )
   if pasted_text:
@@ -73,24 +74,27 @@ if st.button("Evaluate Portfolio", type="primary"):
   else:
     with st.spinner("Analyzing portfolio allocation and risk profile..."):
       try:
-        # Initialize client pointing to Groq's lightning-fast endpoint
         client = OpenAI(
             api_key=api_key, base_url="https://api.groq.com/openai/v1"
         )
 
         system_prompt = (
             "You are a professional, objective, and conservative financial"
-            " equity expert. Review the provided portfolio summary. Provide"
-            " structured, non-binding educational feedback covering: 1) Asset"
-            " Allocation & Diversification breakdown, 2) Concentration risks,"
-            " 3) General suggestions for optimization (e.g., rebalancing ideas)."
-            " Always include a clear disclaimer that this is for educational"
-            " purposes only and not certified financial advice."
-            " Never request personal identifiable information (PII)."
+            " equity expert capable of analyzing portfolios from any global"
+            " market, including Indian equities (NSE/BSE), mutual funds, and"
+            " US stocks. Review the provided portfolio data. Provide detailed,"
+            " structured, non-binding educational feedback covering:\n"
+            "1) Asset Allocation & Sector Diversification breakdown\n"
+            "2) Concentration and Market Risks\n"
+            "3) Actionable optimization suggestions (e.g., rebalancing, hedging"
+            " ideas)\n"
+            "Always include a clear disclaimer that this is for educational"
+            " purposes only and not certified financial advice.\n"
+            "Never request personal identifiable information (PII)."
         )
 
         response = client.chat.completions.create(
-            model="openai/gpt-oss-20b",
+            model="llama-3.1-8b-instant",
             messages=[
                 {"role": "system", "content": system_prompt},
                 {
@@ -102,13 +106,20 @@ if st.button("Evaluate Portfolio", type="primary"):
                 },
             ],
             temperature=0.3,
+            max_tokens=2048,  # Ensures complete, unabridged responses
         )
 
         analysis_result = response.choices[0].message.content
 
-        st.markdown("---")
-        st.subheader("📊 Expert Portfolio Review")
-        st.markdown(analysis_result)
+        if analysis_result:
+          st.markdown("---")
+          st.subheader("📊 Expert Portfolio Review")
+          st.markdown(analysis_result)
+        else:
+          st.error(
+              "The model returned an empty response. Please try re-running or"
+              " simplifying your input formatting."
+          )
 
       except Exception as e:
         st.error(f"An error occurred during generation: {e}")
