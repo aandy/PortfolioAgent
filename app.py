@@ -91,7 +91,7 @@ if st.button("Evaluate Portfolio", type="primary"):
         )
 
         response = client.models.generate_content(
-            model="gemini-2.5-flash",  # Fast and free-tier friendly model
+            model="gemini-3.8-flash",  # Fast and free-tier friendly model
             contents=(
                 f"{system_instruction}\n\nHere is the portfolio summary"
                 f" data:\n{portfolio_data}"
