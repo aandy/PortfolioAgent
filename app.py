@@ -72,7 +72,10 @@ if st.button("Evaluate Portfolio", type="primary"):
   elif not portfolio_data:
     st.warning("Please upload a file or paste your portfolio data first.")
   else:
-    with st.spinner("Analyzing portfolio allocation and risk profile..."):
+    with st.spinner(
+        "Analyzing portfolio allocation, sector diversification, and market"
+        " risks..."
+    ):
       try:
         client = OpenAI(
             api_key=api_key, base_url="https://api.groq.com/openai/v1"
@@ -94,7 +97,7 @@ if st.button("Evaluate Portfolio", type="primary"):
         )
 
         response = client.chat.completions.create(
-            model="llama-3.1-8b-instant",
+            model="openai/gpt-oss-20b",
             messages=[
                 {"role": "system", "content": system_prompt},
                 {
@@ -106,10 +109,13 @@ if st.button("Evaluate Portfolio", type="primary"):
                 },
             ],
             temperature=0.3,
-            max_tokens=2048,  # Ensures complete, unabridged responses
+            max_tokens=2048,
         )
 
-        analysis_result = response.choices[0].message.content
+        # Robust content extraction
+        analysis_result = None
+        if response and response.choices:
+          analysis_result = response.choices[0].message.content
 
         if analysis_result:
           st.markdown("---")
@@ -117,8 +123,8 @@ if st.button("Evaluate Portfolio", type="primary"):
           st.markdown(analysis_result)
         else:
           st.error(
-              "The model returned an empty response. Please try re-running or"
-              " simplifying your input formatting."
+              "Received an empty response payload. Please try checking your"
+              " input format or re-running."
           )
 
       except Exception as e:
