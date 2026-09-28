@@ -94,22 +94,29 @@ Portfolio Data:
 {portfolio_data}"""
 
         response = client.chat.completions.create(
-            model="llama-3.1-8b-instant",
+            model="openai/gpt-oss-20b",
             messages=[{"role": "user", "content": prompt_content}],
             temperature=0.3,
-            max_tokens=2048,
         )
 
-        analysis_result = response.choices[0].message.content
+        # Bulletproof extraction safe for any response schema
+        analysis_result = ""
+        if response and hasattr(response, "choices") and response.choices:
+          message = response.choices[0].message
+          if hasattr(message, "content") and message.content:
+            analysis_result = message.content
 
         if analysis_result:
           st.markdown("---")
           st.subheader("📊 Expert Portfolio Review")
           st.markdown(analysis_result)
         else:
+          st.write(
+              "Raw Response Debug:", response
+          )  # Fallback view if empty
           st.error(
-              "Received an empty text response. Please check your data format"
-              " and try again."
+              "Could not extract text. Please check your input format and try"
+              " again."
           )
 
       except Exception as e:
