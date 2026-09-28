@@ -81,41 +81,26 @@ if st.button("Evaluate Portfolio", type="primary"):
             api_key=api_key, base_url="https://api.groq.com/openai/v1"
         )
 
-        system_prompt = (
-            "You are a professional, objective, and conservative financial"
-            " equity expert capable of analyzing portfolios from any global"
-            " market, including Indian equities (NSE/BSE), mutual funds, and"
-            " US stocks. Review the provided portfolio data. Provide detailed,"
-            " structured, non-binding educational feedback covering:\n"
-            "1) Asset Allocation & Sector Diversification breakdown\n"
-            "2) Concentration and Market Risks\n"
-            "3) Actionable optimization suggestions (e.g., rebalancing, hedging"
-            " ideas)\n"
-            "Always include a clear disclaimer that this is for educational"
-            " purposes only and not certified financial advice.\n"
-            "Never request personal identifiable information (PII)."
-        )
+        prompt_content = f"""You are a professional, objective, and conservative financial equity expert capable of analyzing portfolios from any global market, including Indian equities (NSE/BSE), mutual funds, and US stocks. 
+
+Review the provided portfolio data below and provide detailed, structured educational feedback covering:
+1) Asset Allocation & Sector Diversification breakdown
+2) Concentration and Market Risks
+3) Actionable optimization suggestions (e.g., rebalancing ideas)
+
+Always include a clear disclaimer that this is for educational purposes only and not certified financial advice. Never request personal identifiable information (PII).
+
+Portfolio Data:
+{portfolio_data}"""
 
         response = client.chat.completions.create(
-            model="openai/gpt-oss-20b",
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {
-                    "role": "user",
-                    "content": (
-                        "Here is the portfolio summary data:\n\n"
-                        f"{portfolio_data}"
-                    ),
-                },
-            ],
+            model="llama3-8b-8192",
+            messages=[{"role": "user", "content": prompt_content}],
             temperature=0.3,
             max_tokens=2048,
         )
 
-        # Robust content extraction
-        analysis_result = None
-        if response and response.choices:
-          analysis_result = response.choices[0].message.content
+        analysis_result = response.choices[0].message.content
 
         if analysis_result:
           st.markdown("---")
@@ -123,8 +108,8 @@ if st.button("Evaluate Portfolio", type="primary"):
           st.markdown(analysis_result)
         else:
           st.error(
-              "Received an empty response payload. Please try checking your"
-              " input format or re-running."
+              "Received an empty text response. Please check your data format"
+              " and try again."
           )
 
       except Exception as e:
