@@ -1,6 +1,6 @@
 import io
 import os
-import pandas as py  # standard alias
+import pandas as pd  # standard alias
 import streamlit as st
 from openai import OpenAI  # or replace with groq / deepseek client if preferred
 
