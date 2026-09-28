@@ -83,10 +83,10 @@ if st.button("Evaluate Portfolio", type="primary"):
 
         prompt_content = f"""You are a professional, objective, and conservative financial equity expert capable of analyzing portfolios from any global market, including Indian equities (NSE/BSE), mutual funds, and US stocks. 
 
-Review the provided portfolio data below and provide detailed, structured educational feedback covering:
-1) Asset Allocation & Sector Diversification breakdown
-2) Concentration and Market Risks
-3) Actionable optimization suggestions (e.g., rebalancing ideas)
+Review the provided portfolio data below in complete detail. Your response must include:
+1) **Portfolio Macro Analysis:** Asset allocation, sector diversification breakdown, and major concentration or market risks.
+2) **Stock-by-Stock Action Breakdown:** For *every single stock or holding* found in the portfolio data, evaluate its performance/weight and explicitly categorize the recommended action as **[BUY MORE]**, **[HOLD]**, or **[SELL]**, accompanied by a brief strategic rationale.
+3) **Actionable Optimization Steps:** Step-by-step suggestions for rebalancing or trimming overexposed positions.
 
 Always include a clear disclaimer that this is for educational purposes only and not certified financial advice. Never request personal identifiable information (PII).
 
@@ -97,10 +97,9 @@ Portfolio Data:
             model="openai/gpt-oss-20b",
             messages=[{"role": "user", "content": prompt_content}],
             temperature=0.3,
-            max_tokens=4096,  # Doubled token limit to accommodate reasoning + output
+            max_tokens=4096,
         )
 
-        # Extraction logic
         analysis_result = ""
         if response and hasattr(response, "choices") and response.choices:
           message = response.choices[0].message
@@ -109,7 +108,7 @@ Portfolio Data:
 
         if analysis_result:
           st.markdown("---")
-          st.subheader("📊 Expert Portfolio Review")
+          st.subheader("📊 Expert Portfolio Review & Action Plan")
           st.markdown(analysis_result)
         else:
           st.error(
